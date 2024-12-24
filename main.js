@@ -1,18 +1,3 @@
-const transactions = [
-    {
-        id: Date.now() + 1, // Ensuring unique IDs
-        description: "Monthly Salary",
-        amount: 3500,
-        type: "income",
-    },
-    {
-        id: Date.now() + 2, // Ensuring unique IDs
-        description: "Freelance Income",
-        amount: 1500,
-        type: "income",
-    }
-];
-
 class BudgetTracker {
     constructor() {
         this.transactions = this.loadTransaction();
@@ -26,30 +11,41 @@ class BudgetTracker {
     }
 
     loadTransaction() {
-        return transactions;
+        return JSON.parse(localStorage.getItem("transaction")) || [];
+    }
+
+    saveTransaction() {
+        localStorage.setItem("transaction", JSON.stringify(this.transactions));
     }
 
     initEventListeners() {
-        // Example: Adding event listener for delete buttons
+        // Handle transaction deletion
         this.transactionList.addEventListener("click", (event) => {
             if (event.target.classList.contains("delete-btn")) {
                 const id = parseInt(event.target.dataset.id, 10);
-                this.deleteTransaction(id);
+                if (!isNaN(id)) {
+                    this.deleteTransaction(id);
+                }
             }
         });
 
-        // Form submission handling
+        // Handle form submission
         this.form.addEventListener("submit", (event) => {
             event.preventDefault();
-            const description = this.form.elements["description"].value;
+            const description = this.form.elements["description"].value.trim();
             const amount = parseFloat(this.form.elements["amount"].value);
             const type = this.form.elements["type"].value;
 
-            this.addTransaction({ 
-                id: Date.now(), 
-                description, 
-                amount: type === "expense" ? -Math.abs(amount) : Math.abs(amount), 
-                type 
+            if (!description || isNaN(amount)) {
+                alert("Please enter a valid description and amount.");
+                return;
+            }
+
+            this.addTransaction({
+                id: Date.now(),
+                description,
+                amount: type === "expense" ? -Math.abs(amount) : Math.abs(amount),
+                type
             });
 
             this.form.reset();
@@ -60,7 +56,7 @@ class BudgetTracker {
         this.transactionList.innerHTML = "";
         this.transactions
             .slice()
-            .sort((a, b) => b.id - a.id)
+            .sort((a, b) => b.id - a.id) // Sort by newest first
             .forEach((transaction) => {
                 const transactionDiv = document.createElement("div");
                 transactionDiv.classList.add("transaction", transaction.type);
@@ -75,12 +71,14 @@ class BudgetTracker {
 
     deleteTransaction(id) {
         this.transactions = this.transactions.filter((transaction) => transaction.id !== id);
+        this.saveTransaction();
         this.renderTransactions();
         this.updateBalance();
     }
 
     addTransaction(transaction) {
         this.transactions.push(transaction);
+        this.saveTransaction();
         this.renderTransactions();
         this.updateBalance();
     }
@@ -91,5 +89,5 @@ class BudgetTracker {
     }
 }
 
-
+// Initialize the BudgetTracker
 const budgetTracker = new BudgetTracker();
